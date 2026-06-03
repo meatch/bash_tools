@@ -1,26 +1,79 @@
 # meatch_prefs
 
-My Shell settings and preferences
+Shell configuration and developer tooling library. Works in **bash and zsh**.
 
-## Oh My Zsh! Shell
+## Usage
 
--   `Bash` (Bourne Again SHell) is the default shell for most Linux distributions and macOS.
--   `Zsh` (Z Shell) is an extended Bourne shell with many improvements, including better scripting capabilities, improved tab completion, and advanced prompt customization.
--   `.oh-my-zsh` is a framework for managing Zsh configuration and plugins. [Oh My Zsh! Wiki](https://github.com/ohmyzsh/ohmyzsh/wiki)
+### Colleagues — source the tools
 
-### Customization/Configuration/Loader Files
+Clone the repo and add one line to your `.bashrc` or `.zshrc`:
 
--   The `.zshrc` is what loads in the shell to apply Zsh settings, I have symlinked it in `~/` so I can cleany keep this folder under version control.
--   The `.bashrc` is what loads in the shell to apply its framework and configurations - if you are using the default Bash Shell, which we are not. This file can be safely removed to avoid confusion, but see what 3rd party apps are adding there in case you need to port to `.zshrc`
-
-
-Create Symlinks
-
-```bash
-mv ~/.zshrc ~/.zshrc.backup
-ln -s ~/meatch_prefs/.zshrc ~/.zshrc
-
-mv ~/.zshrc ~/.bashrc.backup
-ln -s ~/meatch_prefs/.bashrc ~/.bashrc
+```sh
+git clone <repo-url> ~/bash_tools
+echo 'source ~/bash_tools/src/init.sh' >> ~/.zshrc   # or ~/.bashrc
 ```
 
+Open a new terminal — all functions and aliases are available.
+
+### Personal setup — full config with Oh My Zsh
+
+Symlink `.zshrc` to also get the Oh My Zsh configuration:
+
+```sh
+mv ~/.zshrc ~/.zshrc.backup
+ln -s ~/meatch_prefs/.zshrc ~/.zshrc
+```
+
+Requires [Oh My Zsh](https://ohmyz.sh/).
+
+---
+
+## Docker Tools
+
+Free up disk space by removing Docker containers, images, volumes, and build caches — while **preserving volumes you specify**.
+
+### Setup
+
+```sh
+cd src/app-support/docker-tools
+cp config.sample.sh config.sh
+```
+
+Edit `config.sh` and add the volumes you want to keep:
+
+```sh
+PRESERVE_VOLUMES=(
+    "my_mysql_volume"
+    "*-wp-content"     # glob patterns supported
+)
+```
+
+`config.sh` is gitignored — each developer maintains their own.
+
+For per-project organization, see `config/noun-project.sample.sh`.
+
+### Commands
+
+```sh
+dockerPruneAll              # full prune (asks for confirmation)
+dockerPruneAll --dry-run    # preview what would be removed
+dockerPruneVolumes          # volumes only
+dockerPruneContainers       # containers only
+dockerPruneImages           # images only
+dockerPruneBuilderCache     # builder cache only
+```
+
+---
+
+## Git Tools
+
+```sh
+# Code review via worktree — keeps your working branch untouched
+review-branch --branch <branch> --merge-to-branch origin/main
+
+# Remove all review worktrees when done (run from primary worktree)
+clean-worktrees
+
+# Bulk-delete local branches
+removeLocalBranches --omit main,develop
+```

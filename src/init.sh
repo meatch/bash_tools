@@ -10,7 +10,7 @@ fi
 
 source "$_TOOLS_SRC/app-support/homebrew.sh"
 source "$_TOOLS_SRC/app-support/git.sh"
-source "$_TOOLS_SRC/app-support/docker.zsh"
+source "$_TOOLS_SRC/app-support/docker-tools/index.sh"
 source "$_TOOLS_SRC/app-support/node.sh"
 source "$_TOOLS_SRC/app-support/python.sh"
 source "$_TOOLS_SRC/app-support/claude.sh"
