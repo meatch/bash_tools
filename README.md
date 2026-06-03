@@ -1,4 +1,4 @@
-# meatch_prefs
+# bash_tools
 
 Shell configuration and developer tooling library. Works in **bash and zsh**.
 
@@ -63,8 +63,8 @@ PRESERVE_VOLUMES=(
 ### Commands
 
 ```sh
-dockerPruneAll              # full prune (asks for confirmation)
 dockerPruneAll --dry-run    # preview what would be removed
+dockerPruneAll              # full prune (asks for confirmation)
 dockerPruneVolumes          # volumes only
 dockerPruneContainers       # containers only
 dockerPruneImages           # images only
@@ -99,9 +99,7 @@ grhard
 ```sh
 gst     # git status
 glo     # git log --oneline
-glow    # git log --oneline --all --graph --decorate
 gbv     # git branch -vva
 gbvg    # git branch -vva | grep -i <term>
-gbvb    # git branch list sorted by author date (remotes)
 gfp     # git fetch -p
 ```
