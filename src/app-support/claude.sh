@@ -18,4 +18,4 @@ if [ -d "$HOME/.local/bin" ]; then
 fi
 
 # If Claude is installed via Homebrew, it should already be in PATH
-# through the homebrew.zsh configuration
+# through the homebrew.sh configuration

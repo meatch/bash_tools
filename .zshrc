@@ -143,10 +143,8 @@ source $ZSH/oh-my-zsh.sh
 # --------------------------------------------------------------
 # Source by concern
 # --------------------------------------------------------------
-source "$HOME/meatch_prefs/src/app-support/index.zsh"
-[ "$ENABLE_DETAILED_PROFILING" = true ] && profile_checkpoint "app-support/index.zsh"
-source "$HOME/meatch_prefs/src/tnp.zsh"
-[ "$ENABLE_DETAILED_PROFILING" = true ] && profile_checkpoint "tnp.zsh"
+source "$HOME/meatch_prefs/src/init.sh"
+[ "$ENABLE_DETAILED_PROFILING" = true ] && profile_checkpoint "init.sh"
 
 # --------------------------------------------------------------
 # Startup Time Logging: End

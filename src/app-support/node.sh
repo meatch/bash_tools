@@ -2,13 +2,12 @@
 #
 # Node
 #
-#===================================*/
+#===================================
 
 # --------------------------------------------------------------
 # NVM Support - Lazy Loading for faster shell startup
 # NVM will auto-load the first time you use: node, npm, npx, or nvm
 # --------------------------------------------------------------
-# tells NVM where its installation directory is located.
 export NVM_DIR="$HOME/.nvm"
 
 # Cache brew prefix for faster lazy loading
@@ -17,10 +16,6 @@ if command -v brew >/dev/null 2>&1; then
     _CACHED_NVM_SH="$_CACHED_BREW_PREFIX/opt/nvm/nvm.sh"
 fi
 
-# --------------------------------------------------------------
-# NVM Support - Lazy Loading for faster shell startup
-# NVM will auto-load the first time you use: node, npm, npx, or nvm
-# --------------------------------------------------------------
 nvm() {
     unset -f nvm node npm npx
     [ -s "$_CACHED_NVM_SH" ] && . "$_CACHED_NVM_SH"

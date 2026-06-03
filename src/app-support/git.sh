@@ -22,7 +22,11 @@ function removeLocalBranches() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --omit)
-                IFS=',' read -rA omit_branches <<< "$2"
+                if [ -n "$ZSH_VERSION" ]; then
+                    IFS=',' read -rA omit_branches <<< "$2"
+                else
+                    IFS=',' read -ra omit_branches <<< "$2"
+                fi
                 shift 2
                 ;;
             *)
@@ -38,7 +42,7 @@ function removeLocalBranches() {
 
     local branches_to_delete=()
     while IFS= read -r branch; do
-[[ "$branch" == "$current_branch" ]] && continue
+        [[ "$branch" == "$current_branch" ]] && continue
         local skip=0
         for omit in "${omit_branches[@]}"; do
             [[ "$branch" == "$omit" ]] && skip=1 && break
@@ -185,7 +189,6 @@ review-branch() {
     echo ""
     echo "   When done: git worktree remove \"$worktree_path\""
     echo "   Or remove all review worktrees at once: clean-worktrees"
-
 }
 
 
@@ -242,6 +245,5 @@ alias gbv="git branch -vva"
 alias gbvg="git branch -vva | grep -i $1"
 alias gbvb="git for-each-ref --format='%(color:cyan)%(authordate:format:%m/%d/%Y %I:%M %p) %(align:25,left)%(color:yellow)%(authorname)%(end) %(color:reset)%(refname:strip=3)' --sort=authorname refs/remotes"
 alias glo="git log --oneline"
-alias gloa="git log --author=\"Mitch Gohman\" --oneline"
 alias glow="git log --oneline --all --graph --decorate"
 alias gfp="git fetch -p"
