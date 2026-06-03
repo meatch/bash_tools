@@ -5,3 +5,7 @@
 config.sh
 config/*.sh
 !config/*.sample.sh
+
+# Personal/unversioned scripts — drop .sh files here to auto-source on shell init
+local/*.sh
+!local/*.sample.sh

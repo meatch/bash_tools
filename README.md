@@ -37,6 +37,18 @@ ln -s ~/meatch_prefs/.zshrc ~/.zshrc
 
 Requires [Oh My Zsh](https://ohmyz.sh/).
 
+### Personal scripts — unversioned local overrides
+
+Drop any `.sh` file into `local/` and it will be sourced automatically on shell init, after all shared scripts have loaded. The directory is gitignored, so your changes stay local.
+
+```sh
+cp local/example.sample.sh local/personal.sh
+# edit local/personal.sh, then:
+source ~/.zshrc
+```
+
+`local/*.sample.sh` files are committed as documentation. All other `local/*.sh` files are ignored by git.
+
 ---
 
 ## Docker Tools

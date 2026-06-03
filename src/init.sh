@@ -27,4 +27,10 @@ source "$_TOOLS_SRC/app-support/claude.sh"
 export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 export PATH="$PATH:$HOME/.cargo/bin"
 
+# Source any personal/unversioned scripts from local/ (gitignored)
+for _f in "$BASH_TOOLS_ROOT/local/"*.sh; do
+    [ -f "$_f" ] && source "$_f"
+done
+unset _f
+
 unset _TOOLS_SRC

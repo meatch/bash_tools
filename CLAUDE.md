@@ -8,9 +8,9 @@ A portable shell configuration and developer tooling library. Scripts target bot
 
 ## Loading chain
 
-`.zshrc` → `src/init.sh` → `src/app-support/*.sh` + `src/app-support/docker-tools/index.sh`
+`.zshrc` → `src/init.sh` → `src/app-support/*.sh` + `src/app-support/docker-tools/index.sh` → `local/*.sh`
 
-`src/init.sh` self-locates using shell-specific path resolution, then sources every script in `src/app-support/`.
+`src/init.sh` self-locates using shell-specific path resolution, then sources every script in `src/app-support/`, then any `*.sh` files in `local/` (gitignored — for personal or machine-specific scripts).
 
 ## Adding a new script
 
