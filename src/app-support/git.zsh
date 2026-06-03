@@ -66,14 +66,13 @@ function removeLocalBranches() {
     done
 }
 
-# Code review helper - generates diff file for Claude Code review
+# Code review helper — creates a worktree for review without touching your working branch
 # Usage: review-branch [--branch <branch>] [--merge-to-branch <branch>]
 # Options:
 #   --branch          Branch to review (default: current branch)
-#   --merge-to-branch   Rebase onto this branch before diffing (skipped if not provided)
+#   --merge-to-branch Rebase onto this branch before diffing (skipped if not provided)
 # Examples:
-#   review-branch
-#   review-branch --branch origin/my-feature
+#   review-branch --branch my-feature --merge-to-branch origin/main
 #   review-branch --branch origin/my-feature --merge-to-branch origin/main
 review-branch() {
     local branch=""
@@ -108,63 +107,134 @@ review-branch() {
         branch="$original_branch"
     fi
 
-    # Normalize: strip origin/ prefix for local checkout
+    # Normalize: strip origin/ prefix for local branch name
     local local_branch="${branch#origin/}"
+    # Sanitize slashes for use as a directory name
+    local branch_dir="${local_branch//\//-}"
 
-    # Validate the remote ref exists
-    if ! git rev-parse --verify "origin/$local_branch" >/dev/null 2>&1; then
-        echo "❌ Branch not found: $branch"
+    # Resolve worktree path as sibling of repo root
+    local repo_root
+    repo_root=$(git rev-parse --show-toplevel)
+    local worktree_path="$(dirname "$repo_root")/${branch_dir}"
+
+    # Guard: can't add a worktree for the currently checked-out branch
+    if [[ "$original_branch" == "$local_branch" ]]; then
+        echo "❌ You are currently on '$local_branch' in this worktree."
+        echo "   Switch to another branch first, then re-run."
         return 1
     fi
 
-    echo "📍 Current branch: $original_branch"
-    if [ "$original_branch" = "$local_branch" ]; then
-        echo "✅ Already on $local_branch"
-    else
-        echo "🔁 Checking out branch: $local_branch"
-        git checkout "$local_branch" || return 1
+    # Guard: worktree directory already exists
+    if [[ -d "$worktree_path" ]]; then
+        echo "❌ Directory already exists: $worktree_path"
+        echo "   Remove it with: git worktree remove \"$worktree_path\""
+        return 1
     fi
 
-    # Rebase only if --merge-to-branch is provided
-    if [ -n "$merge_to_branch" ]; then
+    # Validate the remote ref exists
+    if ! git rev-parse --verify "origin/$local_branch" >/dev/null 2>&1; then
+        echo "❌ Branch not found on remote: origin/$local_branch"
+        return 1
+    fi
+
+    # Validate merge-to branch before doing any work
+    if [[ -n "$merge_to_branch" ]]; then
         if ! git rev-parse --verify "$merge_to_branch" >/dev/null 2>&1; then
             echo "❌ Merge-to branch not found: $merge_to_branch"
             return 1
         fi
+    fi
 
-        echo "🧼 Rebasing $branch onto $merge_to_branch..."
-        git rebase "$merge_to_branch" || {
-            echo "❌ Rebase failed — aborting."
-            git rebase --abort
-            git checkout "$original_branch"
+    # Create worktree — main worktree HEAD is never touched
+    echo "🌳 Creating worktree at $worktree_path..."
+    if git show-ref --verify --quiet "refs/heads/$local_branch"; then
+        git worktree add "$worktree_path" "$local_branch" || return 1
+    else
+        git worktree add --track -b "$local_branch" "$worktree_path" "origin/$local_branch" || return 1
+    fi
+
+    # Rebase inside the worktree
+    if [[ -n "$merge_to_branch" ]]; then
+        echo "🧼 Rebasing $local_branch onto $merge_to_branch (inside worktree)..."
+        (cd "$worktree_path" && git rebase "$merge_to_branch") || {
+            echo "❌ Rebase failed — aborting and removing worktree."
+            (cd "$worktree_path" && git rebase --abort 2>/dev/null)
+            git worktree remove --force "$worktree_path"
             return 1
         }
     else
         echo "⏩ Skipping rebase (no --merge-to-branch provided)"
     fi
 
+    # Generate diff inside the worktree folder
     local diff_base="${merge_to_branch:-origin/main}"
+    local diff_file="${worktree_path}/${branch_dir}.diff.txt"
 
-    local timestamp
-    timestamp=$(date +"%Y.%m.%d-%H.%M.%S")
+    echo "📝 Generating diff against $diff_base..."
+    (cd "$worktree_path" && git diff "$diff_base"..HEAD) > "$diff_file"
 
-    local branch_clean
-    branch_clean=$(echo "$branch" | sed 's/\//-/g')
-
-    local filename="${branch_clean}-PR-clean-${timestamp}.diff.txt"
-    local filepath="$HOME/Desktop/${filename}"
-
-    echo "📝 Generating PR-clean diff against $diff_base..."
-    git diff "$diff_base"..HEAD > "$filepath"
-
-    echo "📂 Opening diff in VS Code..."
-    code "$filepath"
+    # Open new VS Code window: worktree as workspace, diff open as active tab
+    echo "📂 Opening worktree in new VS Code window..."
+    code -n "$worktree_path" "$diff_file"
 
     echo ""
-    echo "✅ PR-clean diff generated:"
-    echo "   $filepath"
+    echo "✅ Review worktree ready:"
+    echo "   Branch: $local_branch"
+    echo "   Path:   $worktree_path"
+    echo "   Diff:   $diff_file"
+    echo ""
+    echo "   When done: git worktree remove \"$worktree_path\""
+    echo "   Or remove all review worktrees at once: clean-worktrees"
+
 }
 
+
+# Remove all review worktrees (everything except the main worktree)
+clean-worktrees() {
+    # Must run from the primary worktree
+    local main_wt
+    main_wt=$(git worktree list | head -1 | awk '{print $1}')
+    local current_root
+    current_root=$(git rev-parse --show-toplevel)
+    if [[ "$current_root" != "$main_wt" ]]; then
+        echo "❌ Run clean-worktrees from your main project folder:"
+        echo "   cd \"$main_wt\""
+        return 1
+    fi
+
+    local worktrees=()
+    local skip_first=true
+
+    while IFS= read -r line; do
+        if $skip_first; then
+            skip_first=false
+            continue
+        fi
+        local wt_path="${line%% *}"
+        worktrees+=("$wt_path")
+    done < <(git worktree list)
+
+    if [[ ${#worktrees[@]} -eq 0 ]]; then
+        echo "No worktrees to remove."
+        return 0
+    fi
+
+    echo "Worktrees to remove:"
+    for wt in "${worktrees[@]}"; do
+        echo "  $wt"
+    done
+    echo ""
+    echo -n "Proceed? [y/N] "
+    read -r confirm
+    [[ "$confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; return 0; }
+
+    for wt in "${worktrees[@]}"; do
+        echo "🗑️  Removing $wt..."
+        git worktree remove "$wt" 2>/dev/null || git worktree remove --force "$wt"
+    done
+
+    echo "✅ Done."
+}
 
 # Aliases
 alias gst="git status"
