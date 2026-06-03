@@ -8,9 +8,9 @@ elif [ -n "$BASH_VERSION" ]; then
     _DT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
-if [ ! -f "$_DT_DIR/config.sh" ]; then
+if [ ! -f "$BASH_TOOLS_ROOT/config.sh" ]; then
     echo "⚠️  docker-tools: config.sh not found."
-    echo "   cd $_DT_DIR && cp config.sample.sh config.sh"
+    echo "   cd $BASH_TOOLS_ROOT && cp config.sample.sh config.sh"
 fi
 
 # Full prune: containers → images → volumes → builder cache

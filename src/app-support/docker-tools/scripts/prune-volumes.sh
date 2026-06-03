@@ -11,11 +11,11 @@ if [[ "$1" == "--dry-run" ]]; then
     echo ""
 fi
 
-# Load config
-CONFIG_FILE="$THIS_SCRIPT_DIR/../config.sh"
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "❌ Missing config.sh"
-    echo "   cd src/app-support/docker-tools && cp config.sample.sh config.sh"
+# Load config from repo root
+CONFIG_FILE="$BASH_TOOLS_ROOT/config.sh"
+if [ -z "$BASH_TOOLS_ROOT" ] || [ ! -f "$CONFIG_FILE" ]; then
+    echo "❌ Missing config.sh at repo root"
+    echo "   cp $BASH_TOOLS_ROOT/config.sample.sh $BASH_TOOLS_ROOT/config.sh"
     exit 1
 fi
 

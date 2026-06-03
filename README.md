@@ -45,12 +45,11 @@ Free up disk space by removing Docker containers, images, volumes, and build cac
 
 ### Setup
 
+Copy the config template from the repo root and add the volumes you want to keep:
+
 ```sh
-cd src/app-support/docker-tools
 cp config.sample.sh config.sh
 ```
-
-Edit `config.sh` and add the volumes you want to keep:
 
 ```sh
 PRESERVE_VOLUMES=(
@@ -59,9 +58,7 @@ PRESERVE_VOLUMES=(
 )
 ```
 
-`config.sh` is gitignored — each developer maintains their own.
-
-For per-project organization, see `config/noun-project.sample.sh`.
+`config.sh` lives at the repo root and is gitignored — each developer maintains their own. For per-project volume organization, see `config/noun-project.sample.sh`.
 
 ### Commands
 

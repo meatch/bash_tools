@@ -8,6 +8,14 @@ elif [ -n "$BASH_VERSION" ]; then
     _TOOLS_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
+# Export repo root so any script (including docker subprocess scripts) can find config.sh
+export BASH_TOOLS_ROOT="$(dirname "$_TOOLS_SRC")"
+
+# Source root config if present — available to all sourced scripts
+if [ -f "$BASH_TOOLS_ROOT/config.sh" ]; then
+    source "$BASH_TOOLS_ROOT/config.sh"
+fi
+
 source "$_TOOLS_SRC/app-support/homebrew.sh"
 source "$_TOOLS_SRC/app-support/git.sh"
 source "$_TOOLS_SRC/app-support/docker-tools/index.sh"

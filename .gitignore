@@ -1,7 +1,7 @@
 .DS_Store
 .claude
 
-# Docker tools — personal volume config (each developer maintains their own)
-src/app-support/docker-tools/config.sh
-src/app-support/docker-tools/config/*.sh
-!src/app-support/docker-tools/config/*.sample.sh
+# Personal config — each developer maintains their own
+config.sh
+config/*.sh
+!config/*.sample.sh
