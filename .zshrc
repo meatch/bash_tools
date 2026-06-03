@@ -143,7 +143,7 @@ source $ZSH/oh-my-zsh.sh
 # --------------------------------------------------------------
 # Source by concern
 # --------------------------------------------------------------
-source "$HOME/meatch_prefs/src/init.sh"
+source "$HOME/bash_tools/src/init.sh"
 [ "$ENABLE_DETAILED_PROFILING" = true ] && profile_checkpoint "init.sh"
 
 # --------------------------------------------------------------
