@@ -93,6 +93,9 @@ dockerPruneBuilderCache     # builder cache only
 # Code review via worktree — keeps your working branch untouched
 review-branch --branch <branch> --merge-to-branch origin/main
 
+# Start a new feature branch in its own worktree (source defaults to origin/main)
+create-worktree <feature-branch> [<source-branch>]
+
 # Remove all review worktrees when done (run from primary worktree)
 clean-worktrees
 

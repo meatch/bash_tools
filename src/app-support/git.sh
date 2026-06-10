@@ -65,13 +65,13 @@ function removeLocalBranches() {
 # Usage: review-branch [--branch <branch>] [--merge-to-branch <branch>]
 # Options:
 #   --branch          Branch to review (default: current branch)
-#   --merge-to-branch Rebase onto this branch before diffing (skipped if not provided)
+#   --merge-to-branch Rebase onto this branch before diffing (default: origin/main)
 # Examples:
-#   review-branch --branch my-feature --merge-to-branch origin/main
-#   review-branch --branch origin/my-feature --merge-to-branch origin/main
+#   review-branch --branch my-feature
+#   review-branch --branch origin/my-feature --merge-to-branch origin/develop
 review-branch() {
     local branch=""
-    local merge_to_branch=""
+    local merge_to_branch="origin/main"
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -119,25 +119,45 @@ review-branch() {
         return 1
     fi
 
-    # Guard: worktree directory already exists
-    if [[ -d "$worktree_path" ]]; then
-        echo "❌ Directory already exists: $worktree_path"
-        echo "   Remove it with: git worktree remove \"$worktree_path\""
-        return 1
-    fi
-
-    # Validate the remote ref exists
-    if ! git rev-parse --verify "origin/$local_branch" >/dev/null 2>&1; then
-        echo "❌ Branch not found on remote: origin/$local_branch"
-        return 1
-    fi
-
     # Validate merge-to branch before doing any work
-    if [[ -n "$merge_to_branch" ]]; then
-        if ! git rev-parse --verify "$merge_to_branch" >/dev/null 2>&1; then
-            echo "❌ Merge-to branch not found: $merge_to_branch"
-            return 1
+    if ! git rev-parse --verify "$merge_to_branch" >/dev/null 2>&1; then
+        echo "❌ Merge-to branch not found: $merge_to_branch"
+        return 1
+    fi
+
+    local diff_file="${worktree_path}/${branch_dir}.diff.txt"
+
+    # Worktree directory already exists — refresh it, then open it
+    if [[ -d "$worktree_path" ]]; then
+        echo "📂 Worktree folder already exists — refreshing..."
+
+        if git -C "$worktree_path" rev-parse --verify "origin/$local_branch" >/dev/null 2>&1; then
+            echo "⬇️  Pulling latest for $local_branch..."
+            git -C "$worktree_path" reset --hard "origin/$local_branch" || return 1
+        else
+            echo "⏩ No remote branch origin/$local_branch — skipping pull"
         fi
+
+        echo "🧼 Rebasing $local_branch onto $merge_to_branch (inside worktree)..."
+        git -C "$worktree_path" rebase "$merge_to_branch" || {
+            echo "❌ Rebase failed — aborting rebase. Resolve manually in $worktree_path"
+            git -C "$worktree_path" rebase --abort 2>/dev/null
+            return 1
+        }
+
+        echo "📝 Regenerating diff against $merge_to_branch..."
+        git -C "$worktree_path" diff "$merge_to_branch"..HEAD > "$diff_file"
+
+        echo "📂 Opening worktree in VS Code..."
+        code -n "$worktree_path" "$diff_file"
+        return 0
+    fi
+
+    # Validate the branch exists locally or on the remote
+    if ! git show-ref --verify --quiet "refs/heads/$local_branch" \
+        && ! git rev-parse --verify "origin/$local_branch" >/dev/null 2>&1; then
+        echo "❌ Branch not found locally or on remote: $local_branch"
+        return 1
     fi
 
     # Create worktree — main worktree HEAD is never touched
@@ -149,24 +169,17 @@ review-branch() {
     fi
 
     # Rebase inside the worktree
-    if [[ -n "$merge_to_branch" ]]; then
-        echo "🧼 Rebasing $local_branch onto $merge_to_branch (inside worktree)..."
-        (cd "$worktree_path" && git rebase "$merge_to_branch") || {
-            echo "❌ Rebase failed — aborting and removing worktree."
-            (cd "$worktree_path" && git rebase --abort 2>/dev/null)
-            git worktree remove --force "$worktree_path"
-            return 1
-        }
-    else
-        echo "⏩ Skipping rebase (no --merge-to-branch provided)"
-    fi
+    echo "🧼 Rebasing $local_branch onto $merge_to_branch (inside worktree)..."
+    (cd "$worktree_path" && git rebase "$merge_to_branch") || {
+        echo "❌ Rebase failed — aborting and removing worktree."
+        (cd "$worktree_path" && git rebase --abort 2>/dev/null)
+        git worktree remove --force "$worktree_path"
+        return 1
+    }
 
     # Generate diff inside the worktree folder
-    local diff_base="${merge_to_branch:-origin/main}"
-    local diff_file="${worktree_path}/${branch_dir}.diff.txt"
-
-    echo "📝 Generating diff against $diff_base..."
-    (cd "$worktree_path" && git diff "$diff_base"..HEAD) > "$diff_file"
+    echo "📝 Generating diff against $merge_to_branch..."
+    (cd "$worktree_path" && git diff "$merge_to_branch"..HEAD) > "$diff_file"
 
     # Open new VS Code window: worktree as workspace, diff open as active tab
     echo "📂 Opening worktree in new VS Code window..."
@@ -182,6 +195,71 @@ review-branch() {
     echo "   Or remove all review worktrees at once: clean-worktrees"
 }
 
+# Create a new feature branch in its own worktree
+# Usage: create-worktree <feature-branch> [<source-branch>]
+#   feature-branch  Name of the branch to create (or reuse, if it already exists locally)
+#   source-branch   Ref to branch from (default: origin/main; ignored when the branch already exists)
+# If the worktree folder already exists, it is simply opened in VS Code.
+# Examples:
+#   create-worktree my-feature
+#   create-worktree my-feature origin/develop
+create-worktree() {
+    local feature_branch="$1"
+    local source_branch="${2:-origin/main}"
+
+    if [ -z "$feature_branch" ]; then
+        echo "❌ Missing feature branch name."
+        echo "   Usage: create-worktree <feature-branch> [<source-branch>]"
+        return 1
+    fi
+
+    if git remote get-url origin >/dev/null 2>&1; then
+        echo "🔄 Fetching latest from origin..."
+        git fetch origin --prune || return 1
+    fi
+
+    # Sanitize slashes for use as a directory name
+    local branch_dir="${feature_branch//\//-}"
+
+    # Resolve worktree path as sibling of repo root
+    local repo_root
+    repo_root=$(git rev-parse --show-toplevel)
+    local worktree_path="$(dirname "$repo_root")/${branch_dir}"
+
+    # Worktree directory already exists — just open it
+    if [[ -d "$worktree_path" ]]; then
+        echo "📂 Worktree folder already exists — opening in VS Code..."
+        code -n "$worktree_path"
+        return 0
+    fi
+
+    if git show-ref --verify --quiet "refs/heads/$feature_branch"; then
+        # Branch already exists locally — check it out in a worktree as-is
+        echo "🌳 Branch already exists — creating worktree at $worktree_path from existing branch..."
+        git worktree add "$worktree_path" "$feature_branch" || return 1
+        source_branch="existing local branch"
+    else
+        # Validate the source ref exists
+        if ! git rev-parse --verify "$source_branch" >/dev/null 2>&1; then
+            echo "❌ Source branch not found: $source_branch"
+            return 1
+        fi
+
+        echo "🌳 Creating worktree at $worktree_path from $source_branch..."
+        git worktree add "$worktree_path" -b "$feature_branch" "$source_branch" || return 1
+    fi
+
+    echo "📂 Opening worktree in new VS Code window..."
+    code -n "$worktree_path"
+
+    echo ""
+    echo "✅ Worktree ready:"
+    echo "   Branch: $feature_branch (from $source_branch)"
+    echo "   Path:   $worktree_path"
+    echo ""
+    echo "   When done: git worktree remove \"$worktree_path\""
+    echo "   Or remove all extra worktrees at once: clean-worktrees"
+}
 
 # Remove all review worktrees (everything except the main worktree)
 clean-worktrees() {

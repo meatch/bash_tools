@@ -68,6 +68,7 @@ Self-contained pure-bash Docker prune tool. `index.sh` is sourced by `init.sh` a
 | Function | Description |
 |---|---|
 | `review-branch --branch <b> --merge-to-branch <dest>` | Creates a git worktree at `../<branch-dir>`, rebases in the worktree (never touches main), generates diff, opens VS Code |
+| `create-worktree <feature-branch> [<source>]` | Creates a new branch in a worktree at `../<branch-dir>`, branched from `<source>` (default: `origin/main`) |
 | `clean-worktrees` | Removes all non-primary worktrees; must run from the primary worktree |
 | `removeLocalBranches [--omit b1,b2]` | Bulk-delete local branches with confirmation |
 | `dockerPruneAll [--dry-run]` | Full Docker prune: containers → images → volumes → cache |
