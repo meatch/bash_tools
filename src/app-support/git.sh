@@ -61,11 +61,32 @@ function removeLocalBranches() {
     done
 }
 
+# Non-destructive conflict check — same three-way merge as `git merge`, but
+# computed in memory: no working tree, index, or branch changes, nothing to abort.
+# Requires git >= 2.38 for merge-tree --write-tree; older gits skip the check.
+_review-branch-conflict-check() {
+    local worktree_path="$1"
+    local merge_to_branch="$2"
+
+    git -C "$worktree_path" merge-tree --write-tree "$merge_to_branch" HEAD >/dev/null 2>&1
+    local rc=$?
+    if [[ $rc -eq 0 ]]; then
+        echo "✅ Merges cleanly into $merge_to_branch"
+    elif [[ $rc -eq 1 ]]; then
+        echo "⚠️  Would conflict with $merge_to_branch — diff is still reviewable; GitHub will flag the conflict on the PR"
+    else
+        echo "⏩ Skipping conflict check (requires git >= 2.38)"
+    fi
+}
+
 # Code review helper — creates a worktree for review without touching your working branch
+# Diff is generated with three dots (merge-base..branch), so it shows only the
+# branch's own changes — same as a GitHub PR diff — even when other work has
+# already merged to the destination branch. No rebase, history is untouched.
 # Usage: review-branch [--branch <branch>] [--merge-to-branch <branch>]
 # Options:
 #   --branch          Branch to review (default: current branch)
-#   --merge-to-branch Rebase onto this branch before diffing (default: origin/main)
+#   --merge-to-branch Branch the PR targets, used as the diff base (default: origin/main)
 # Examples:
 #   review-branch --branch my-feature
 #   review-branch --branch origin/my-feature --merge-to-branch origin/develop
@@ -138,15 +159,10 @@ review-branch() {
             echo "⏩ No remote branch origin/$local_branch — skipping pull"
         fi
 
-        echo "🧼 Rebasing $local_branch onto $merge_to_branch (inside worktree)..."
-        git -C "$worktree_path" rebase "$merge_to_branch" || {
-            echo "❌ Rebase failed — aborting rebase. Resolve manually in $worktree_path"
-            git -C "$worktree_path" rebase --abort 2>/dev/null
-            return 1
-        }
+        _review-branch-conflict-check "$worktree_path" "$merge_to_branch"
 
         echo "📝 Regenerating diff against $merge_to_branch..."
-        git -C "$worktree_path" diff "$merge_to_branch"..HEAD > "$diff_file"
+        git -C "$worktree_path" diff "$merge_to_branch"...HEAD > "$diff_file"
 
         echo "📂 Opening worktree in VS Code..."
         code -n "$worktree_path" "$diff_file"
@@ -168,18 +184,11 @@ review-branch() {
         git worktree add --track -b "$local_branch" "$worktree_path" "origin/$local_branch" || return 1
     fi
 
-    # Rebase inside the worktree
-    echo "🧼 Rebasing $local_branch onto $merge_to_branch (inside worktree)..."
-    (cd "$worktree_path" && git rebase "$merge_to_branch") || {
-        echo "❌ Rebase failed — aborting and removing worktree."
-        (cd "$worktree_path" && git rebase --abort 2>/dev/null)
-        git worktree remove --force "$worktree_path"
-        return 1
-    }
+    _review-branch-conflict-check "$worktree_path" "$merge_to_branch"
 
     # Generate diff inside the worktree folder
     echo "📝 Generating diff against $merge_to_branch..."
-    (cd "$worktree_path" && git diff "$merge_to_branch"..HEAD) > "$diff_file"
+    git -C "$worktree_path" diff "$merge_to_branch"...HEAD > "$diff_file"
 
     # Open new VS Code window: worktree as workspace, diff open as active tab
     echo "📂 Opening worktree in new VS Code window..."
