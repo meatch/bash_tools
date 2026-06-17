@@ -311,7 +311,7 @@ clean-worktrees() {
 
     for wt in "${worktrees[@]}"; do
         echo "🗑️  Removing $wt..."
-        git worktree remove "$wt" 2>/dev/null || git worktree remove --force "$wt"
+        rm -rf "$wt" && git worktree prune
     done
 
     echo "✅ Done."

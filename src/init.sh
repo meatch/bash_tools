@@ -22,6 +22,7 @@ source "$_TOOLS_SRC/app-support/docker-tools/index.sh"
 source "$_TOOLS_SRC/app-support/node.sh"
 source "$_TOOLS_SRC/app-support/python.sh"
 source "$_TOOLS_SRC/app-support/claude.sh"
+source "$_TOOLS_SRC/app-support/tnp.sh"
 
 # PATH additions
 export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
