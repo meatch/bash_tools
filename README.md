@@ -2,6 +2,18 @@
 
 Shell configuration and developer tooling library. Works in **bash and zsh**.
 
+## Prerequisites
+
+- **git** — required for all git tools
+- **[gh](https://cli.github.com/)** — required for `review-branch --pr`
+
+```sh
+brew install gh
+gh auth login   # authenticate with your GitHub account (one-time)
+```
+
+`gh auth login` will prompt you to choose GitHub.com, select HTTPS or SSH, and open a browser to complete OAuth. Once done, `gh` commands work against any repo you have access to.
+
 ## Usage
 
 ### Colleagues — source the tools
@@ -90,8 +102,14 @@ dockerPruneBuilderCache     # builder cache only
 ### Functions
 
 ```sh
-# Code review via worktree — keeps your working branch untouched
-review-branch --branch <branch> --merge-to-branch origin/main
+# Review a PR — checks out the branch and opens a REVIEW.md with a ready-to-paste Claude prompt
+review-branch --pr <number>
+
+# Same, but in a separate worktree (new VS Code window, branch isolated from your working copy)
+review-branch --pr <number> --worktree
+
+# Review without a PR number (falls back to branch-based diff check)
+review-branch --branch <branch> [--merge-to-branch origin/main]
 
 # Start a new feature branch in its own worktree (source defaults to origin/main)
 create-worktree <feature-branch> [<source-branch>]
@@ -108,6 +126,15 @@ grib <branch>
 # Hard reset — clean untracked files, reset, and checkout
 grhard
 ```
+
+#### `review-branch` workflow
+
+1. Run `review-branch --pr 123` from your project directory
+2. The branch is checked out and `REVIEW.md` opens in VS Code
+3. Open Claude Code in the project and paste the prompt from `REVIEW.md`
+4. Claude fetches the PR diff and review comments via `gh` and reviews against the checked-out code
+
+Use `--worktree` when you want the branch isolated in a sibling directory so your current working branch is unaffected.
 
 ### Aliases
 

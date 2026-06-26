@@ -67,7 +67,7 @@ Self-contained pure-bash Docker prune tool. `index.sh` is sourced by `init.sh` a
 
 | Function | Description |
 |---|---|
-| `review-branch --branch <b> --merge-to-branch <dest>` | Creates a git worktree at `../<branch-dir>`, generates a GitHub-style three-dot diff (`<dest>...HEAD`), warns on merge conflicts via `git merge-tree`, opens VS Code |
+| `review-branch --pr <n> [--worktree]` | Resolves branch + base via `gh`, checks out branch (or creates a sibling worktree with `--worktree`), symlinks `.claude/settings.local.json`, writes `REVIEW.md` with a ready-to-paste Claude prompt, opens VS Code. Requires `gh` authenticated. |
 | `create-worktree <feature-branch> [<source>]` | Creates a new branch in a worktree at `../<branch-dir>`, branched from `<source>` (default: `origin/main`) |
 | `clean-worktrees` | Removes all non-primary worktrees; must run from the primary worktree |
 | `removeLocalBranches [--omit b1,b2]` | Bulk-delete local branches with confirmation |
