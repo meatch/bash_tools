@@ -22,6 +22,7 @@ A portable shell configuration and developer tooling library. Scripts target bot
 All `.sh` files must work in both bash and zsh. Key incompatibilities to handle:
 
 **Array reads:**
+
 ```sh
 if [ -n "$ZSH_VERSION" ]; then
     IFS=',' read -rA my_array <<< "$input"   # zsh: -A
@@ -31,6 +32,7 @@ fi
 ```
 
 **Self-location in a sourced file:**
+
 ```sh
 if [ -n "$ZSH_VERSION" ]; then
     _DIR="${${(%):-%x}:A:h}"
@@ -66,7 +68,7 @@ Self-contained pure-bash Docker prune tool. `index.sh` is sourced by `init.sh` a
 ## Key functions
 
 | Function | Description |
-|---|---|
+| --- | --- |
 | `tnp-review-branch --pr <n> [--worktree]` | Resolves branch + base via `gh`, checks out branch (or creates a sibling worktree with `--worktree`), symlinks `.claude/settings.local.json`, writes `REVIEW.md` with a ready-to-paste Claude prompt, opens VS Code. Requires `gh` authenticated. TNP-specific. |
 | `create-worktree <feature-branch> [<source>]` | Creates a new branch in a worktree at `../<branch-dir>`, branched from `<source>` (default: `origin/main`) |
 | `clean-worktrees` | Removes all non-primary worktrees; must run from the primary worktree |
