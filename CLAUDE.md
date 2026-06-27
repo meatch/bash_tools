@@ -70,6 +70,6 @@ Self-contained pure-bash Docker prune tool. `index.sh` is sourced by `init.sh` a
 | `tnp-review-branch --pr <n> [--worktree]` | Resolves branch + base via `gh`, checks out branch (or creates a sibling worktree with `--worktree`), symlinks `.claude/settings.local.json`, writes `REVIEW.md` with a ready-to-paste Claude prompt, opens VS Code. Requires `gh` authenticated. TNP-specific. |
 | `create-worktree <feature-branch> [<source>]` | Creates a new branch in a worktree at `../<branch-dir>`, branched from `<source>` (default: `origin/main`) |
 | `clean-worktrees` | Removes all non-primary worktrees; must run from the primary worktree |
-| `removeLocalBranches [--omit b1,b2]` | Bulk-delete local branches with confirmation |
-| `dockerPruneAll [--dry-run]` | Full Docker prune: containers → images → volumes → cache |
-| `dockerPruneVolumes [--dry-run]` | Volumes only, preserving those matched by `PRESERVE_VOLUMES` |
+| `remove-local-branches [--omit b1,b2]` | Bulk-delete local branches with confirmation |
+| `docker-prune-all [--dry-run]` | Full Docker prune: containers → images → volumes → cache |
+| `docker-prune-volumes [--dry-run]` | Volumes only, preserving those matched by `PRESERVE_VOLUMES` |

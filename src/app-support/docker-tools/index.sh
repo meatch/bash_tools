@@ -14,28 +14,28 @@ if [ ! -f "$BASH_TOOLS_ROOT/config.sh" ]; then
 fi
 
 # Full prune: containers → images → volumes → builder cache
-# Usage: dockerPruneAll [--dry-run]
-dockerPruneAll() {
+# Usage: docker-prune-all [--dry-run]
+docker-prune-all() {
     bash "$_DT_DIR/scripts/prune-all.sh" "$@"
 }
 
 # Prune volumes only, skipping those in PRESERVE_VOLUMES
-# Usage: dockerPruneVolumes [--dry-run]
-dockerPruneVolumes() {
+# Usage: docker-prune-volumes [--dry-run]
+docker-prune-volumes() {
     bash "$_DT_DIR/scripts/prune-volumes.sh" "$@"
 }
 
 # Stop and remove all containers
-dockerPruneContainers() {
+docker-prune-containers() {
     bash "$_DT_DIR/scripts/prune-containers.sh"
 }
 
 # Remove all unused images
-dockerPruneImages() {
+docker-prune-images() {
     bash "$_DT_DIR/scripts/prune-images.sh"
 }
 
 # Clear all builder caches
-dockerPruneBuilderCache() {
+docker-prune-builder-cache() {
     bash "$_DT_DIR/scripts/prune-builder-cache.sh"
 }

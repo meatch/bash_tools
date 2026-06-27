@@ -2,12 +2,12 @@
 # Git
 # --------------------------------------------------------------
 # Functions
-function grib() {
+grib() {
     git rebase -i origin/$1
 }
 
-function removeLocalBranches() {
-    # Usage: removeLocalBranches [--omit <branch1,branch2,...>]
+remove-local-branches() {
+    # Usage: remove-local-branches [--omit <branch1,branch2,...>]
     local omit_branches=()
 
     while [[ $# -gt 0 ]]; do
@@ -22,7 +22,7 @@ function removeLocalBranches() {
                 ;;
             *)
                 echo "Unknown option: $1"
-                echo "Usage: removeLocalBranches [--omit <branch1,branch2,...>]"
+                echo "Usage: remove-local-branches [--omit <branch1,branch2,...>]"
                 return 1
                 ;;
         esac
