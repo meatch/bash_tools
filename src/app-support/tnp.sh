@@ -185,15 +185,18 @@ _tnp-review-branch-conflict-check() {
 
 # Code review helper — checks out a PR branch and writes a REVIEW.md with a ready-to-paste
 # Claude prompt. Default: checks out in the current repo. --worktree: opens in a separate worktree.
-# Usage: tnp-review-branch --pr <number> [--worktree] [--branch <branch>] [--merge-to-branch <branch>]
+# Usage: tnp-review-branch --pr <number> [--worktree] [--type peer|personal|deep] [--branch <branch>] [--merge-to-branch <branch>]
 # Options:
 #   --pr              PR number — auto-resolves branch and base branch via gh
 #   --worktree        Check out in a separate worktree instead of the current repo
+#   --type            Review type: peer, personal, or deep (default: peer)
 #   --branch          Branch to review (default: current branch)
 #   --merge-to-branch Branch the PR targets, used for conflict check (default: origin/main)
 # Examples:
 #   tnp-review-branch --pr 123
 #   tnp-review-branch --pr 123 --worktree
+#   tnp-review-branch --pr 123 --worktree --type personal
+#   tnp-review-branch --pr 123 --worktree --type deep
 #   tnp-review-branch --branch my-feature --merge-to-branch origin/develop
 tnp-review-branch() {
     local pr_number=""
@@ -201,6 +204,7 @@ tnp-review-branch() {
     local merge_to_branch="origin/main"
     local merge_to_branch_explicit=false
     local use_worktree=false
+    local review_type="peer"
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -208,13 +212,23 @@ tnp-review-branch() {
             --branch)          branch="$2"; shift 2 ;;
             --merge-to-branch) merge_to_branch="$2"; merge_to_branch_explicit=true; shift 2 ;;
             --worktree)        use_worktree=true; shift ;;
+            --type)            review_type="$2"; shift 2 ;;
             *)
                 echo "❌ Unknown option: $1"
-                echo "   Usage: tnp-review-branch --pr <number> [--worktree] [--branch <branch>] [--merge-to-branch <branch>]"
+                echo "   Usage: tnp-review-branch --pr <number> [--worktree] [--type peer|personal|deep] [--branch <branch>] [--merge-to-branch <branch>]"
                 return 1
                 ;;
         esac
     done
+
+    case "$review_type" in
+        peer|personal|deep) ;;
+        *)
+            echo "❌ Unknown review type: $review_type"
+            echo "   Expected one of: peer, personal, deep"
+            return 1
+            ;;
+    esac
 
     # --- Shared setup ---
 
@@ -253,21 +267,135 @@ tnp-review-branch() {
     # --- Helper: write REVIEW.md ---
     _write_review_file() {
         local dir="$1"
+        local review_label=""
+        local review_summary=""
+        local review_instructions=""
+        local claude_prompt="Read ./REVIEW.md and perform the review."
+        local pr_target="this branch"
+
         if [[ -n "$pr_url" ]]; then
-            cat > "${dir}/REVIEW.md" << EOF
+            pr_target="$pr_url"
+        fi
+
+        case "$review_type" in
+            personal)
+                review_label="QUICK / Personal Pre-review"
+                review_summary="Fast pre-review before opening your own PR. Changed files only. Avoid broad architecture feedback and avoid subagents unless absolutely necessary."
+                review_instructions=$(cat << EOF
+Pre-review my current branch before I open a PR.
+
+The branch \`$local_branch\` is checked out locally.
+
+Review Mode: QUICK
+
+Scope:
+
+- Review only the changed files.
+- Focus on correctness, regressions, obvious bugs, missing tests, and confusing code.
+- Skip architecture discussions unless the changes clearly affect architecture.
+- Do not inspect unrelated files.
+- Do not use subagents unless absolutely necessary.
+- Keep feedback concise and actionable.
+
+Return:
+
+1. Blocking issues
+2. Suggested improvements
+3. Overall confidence
+EOF
+)
+                ;;
+            deep)
+                review_label="DEEP / Comprehensive Review"
+                review_summary="Comprehensive review for risky or architectural changes. This mode may inspect related files more broadly and may use subagents when helpful."
+                review_instructions=$(cat << EOF
+Code review this PR: $pr_target
+
+The branch \`$local_branch\` is checked out locally for additional context.
+
+Review Mode: DEEP
+
+Take a comprehensive reviewer approach.
+
+Before reviewing:
+
+- Read the PR description and comments using GitHub CLI when a PR URL is available.
+- Inspect the PR diff.
+
+In addition to the Standard Review:
+
+- Evaluate architecture.
+- Evaluate long-term maintainability.
+- Consider performance implications.
+- Consider security implications.
+- Consider API consistency.
+- Cross-reference related files when useful.
+- Use subagents whenever they improve review quality.
+
+Return:
+
+1. Blocking issues
+2. Major issues
+3. Minor issues
+4. Architectural observations
+5. Long-term recommendations
+EOF
+)
+                ;;
+            peer)
+                review_label="STANDARD / Peer Review"
+                review_summary="Default peer review. Focus on changed files and directly related code. Use subagents only when they provide clear value."
+                review_instructions=$(cat << EOF
+Code review this PR: $pr_target
+
+The branch \`$local_branch\` is checked out locally for additional context.
+
+Review Mode: STANDARD
+
+Before reviewing:
+
+- Read the PR description and comments using GitHub CLI when a PR URL is available.
+- Inspect the PR diff.
+
+Scope:
+
+- Focus primarily on changed files.
+- Read additional files only when necessary to understand the changes.
+- Prioritize correctness, regressions, edge cases, tests, and maintainability of the modified code.
+- Do not perform a full repository audit.
+- Do not suggest broad refactors.
+- Do not edit code unless requested.
+- Use subagents only when they provide clear value.
+
+Return:
+
+1. Blocking issues
+2. Major suggestions
+3. Minor suggestions
+4. Overall assessment
+EOF
+)
+                ;;
+        esac
+
+        cat > "${dir}/REVIEW.md" << EOF
 # PR Review
 
-Open Claude in this project, then paste:
+Review Type: $review_label
 
+$review_summary
+
+## Paste into Claude
+
+\`\`\`text
+$claude_prompt
 \`\`\`
-Code review this PR: $pr_url
-The branch \`$local_branch\` is checked out for additional context.
-\`\`\`
+
+## Instructions for Claude
+
+$review_instructions
 EOF
-            echo "${dir}/REVIEW.md"
-        else
-            echo "$dir"
-        fi
+        echo "${dir}/REVIEW.md"
     }
 
     # --- In-place mode (default) ---
@@ -288,12 +416,13 @@ EOF
 
         local review_file
         review_file=$(_write_review_file "$repo_root")
-        [[ -n "$pr_url" ]] && code "$review_file"
+        code "$review_file"
 
         echo ""
         echo "✅ Ready to review in current project:"
         echo "   Branch: $local_branch"
-        [[ -n "$pr_url" ]] && echo "   Prompt: $review_file"
+        echo "   Review type: $review_type"
+        echo "   Prompt: $review_file"
         return 0
     fi
 
@@ -341,7 +470,8 @@ EOF
     echo "✅ Review worktree ready:"
     echo "   Branch: $local_branch"
     echo "   Path:   $worktree_path"
-    [[ -n "$pr_url" ]] && echo "   Prompt: $review_file"
+    echo "   Review type: $review_type"
+    echo "   Prompt: $review_file"
     echo ""
     echo "   When done: git worktree remove \"$worktree_path\""
     echo "   Or remove all review worktrees at once: clean-worktrees"
