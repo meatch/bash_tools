@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Setup:
+       1. cp config/com.meatch.omz-weekly-update.plist.sample ~/Library/LaunchAgents/com.meatch.omz-weekly-update.plist
+       2. Edit the copy: replace /Users/meatch with your own home directory
+       3. mkdir -p ~/.oh-my-zsh/log
+       4. launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.meatch.omz-weekly-update.plist
+
+     Runs `omz update` unattended every Monday at 9am, logging to
+     ~/.oh-my-zsh/log/auto-update.log. Exists because .zshrc sets
+     DISABLE_AUTO_UPDATE=true (Oh My Zsh's own update check makes a live
+     network call on every shell launch instead of its intended once-per-13-days
+     cadence, due to a bug in its last-checked timestamp tracking) — this
+     LaunchAgent replaces it with a real, independent schedule.
+
+     To remove: launchctl bootout "gui/$(id -u)/com.meatch.omz-weekly-update" -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.meatch.omz-weekly-update</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>/Users/meatch/.oh-my-zsh/tools/upgrade.sh</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>ZSH</key>
+        <string>/Users/meatch/.oh-my-zsh</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/Users/meatch/.oh-my-zsh/log/auto-update.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/meatch/.oh-my-zsh/log/auto-update.log</string>
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
