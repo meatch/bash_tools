@@ -10,10 +10,10 @@
 # --------------------------------------------------------------
 export NVM_DIR="$HOME/.nvm"
 
-# Cache brew prefix for faster lazy loading
-if command -v brew >/dev/null 2>&1; then
-    _CACHED_BREW_PREFIX="$(brew --prefix)"
-    _CACHED_NVM_SH="$_CACHED_BREW_PREFIX/opt/nvm/nvm.sh"
+# $HOMEBREW_PREFIX is exported by homebrew.sh's `brew shellenv` eval —
+# reuse it instead of forking another `brew --prefix` process.
+if [ -n "$HOMEBREW_PREFIX" ]; then
+    _CACHED_NVM_SH="$HOMEBREW_PREFIX/opt/nvm/nvm.sh"
 fi
 
 nvm() {

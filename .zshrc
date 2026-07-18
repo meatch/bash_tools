@@ -33,6 +33,13 @@ ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(bracketed-paste)
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+# Skip Oh My Zsh's built-in update check entirely — it makes a live network
+# call (curl to api.github.com) on every shell launch instead of its intended
+# once-per-13-days cadence, because its own last-checked timestamp tracking
+# has a bug that leaves it permanently stale. Updates run on a real weekly
+# schedule instead (see ~/Library/LaunchAgents/com.meatch.omz-weekly-update.plist).
+export DISABLE_AUTO_UPDATE=true
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
