@@ -4,6 +4,9 @@
 #
 #===================================
 
+# ensure subagents are using cheaper haiku model
+export CLAUDE_CODE_SUBAGENT_MODEL="haiku"
+
 # --------------------------------------------------------------
 # Claude Code Setup
 # --------------------------------------------------------------
