@@ -6,6 +6,13 @@ grib() {
     git rebase -i origin/$1
 }
 
+# Log the commits on the current branch not yet on the given remote branch
+# Usage: glopr [<dest-branch>]  (default: main)
+glopr() {
+    local dest_branch="${1:-main}"
+    git log --oneline --no-merges "origin/${dest_branch}..HEAD"
+}
+
 remove-local-branches() {
     # Usage: remove-local-branches [--omit <branch1,branch2,...>]
     local omit_branches=()
